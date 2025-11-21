@@ -45,7 +45,7 @@ kubetrust works by:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/kubetrust.git
+git clone https://github.com/kubetrust/kubetrust.git
 cd kubetrust
 
 # Update chart dependencies (downloads trust-manager)
@@ -109,15 +109,15 @@ helm install kubetrust ./chart \
 
 ### Key Configuration Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `webhook.image.repository` | Webhook container image | `kubetrust/webhook` |
-| `webhook.image.tag` | Image tag | `latest` |
-| `webhook.replicas` | Number of webhook replicas | `1` |
-| `customCA.pem` | Custom CA certificate (PEM format) | `""` |
-| `webhook.caInjection.configMapName` | ConfigMap with CA bundle | `trust-bundle` |
-| `webhook.caInjection.configMapKey` | Key in ConfigMap | `trust-bundle.pem` |
-| `targetNamespaces` | Namespaces to auto-label | `[]` |
+| Parameter                           | Description                        | Default               |
+| ----------------------------------- | ---------------------------------- | --------------------- |
+| `webhook.image.repository`          | Webhook container image            | `karthickk/kubetrust` |
+| `webhook.image.tag`                 | Image tag                          | `latest`              |
+| `webhook.replicas`                  | Number of webhook replicas         | `1`                   |
+| `customCA.pem`                      | Custom CA certificate (PEM format) | `""`                  |
+| `webhook.caInjection.configMapName` | ConfigMap with CA bundle           | `trust-bundle`        |
+| `webhook.caInjection.configMapKey`  | Key in ConfigMap                   | `trust-bundle.pem`    |
+| `targetNamespaces`                  | Namespaces to auto-label           | `[]`                  |
 
 📖 **Full configuration reference**: See [chart/values.yaml](chart/values.yaml)
 
@@ -125,13 +125,13 @@ helm install kubetrust ./chart \
 
 The webhook supports runtime configuration via environment variables (automatically set by Helm):
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TLS_CERT_FILE` | Path to webhook TLS certificate | `./ssl/kubetrust.pem` |
-| `TLS_KEY_FILE` | Path to webhook TLS key | `./ssl/kubetrust.key` |
-| `CA_CONFIGMAP_NAME` | ConfigMap with CAs to inject | `trust-bundle` |
-| `CA_CONFIGMAP_KEY` | Key in ConfigMap | `trust-bundle.pem` |
-| `CA_CERT_FILENAME` | Filename when mounted in pods | `ca-certificates.crt` |
+| Variable            | Description                     | Default               |
+| ------------------- | ------------------------------- | --------------------- |
+| `TLS_CERT_FILE`     | Path to webhook TLS certificate | `./ssl/kubetrust.pem` |
+| `TLS_KEY_FILE`      | Path to webhook TLS key         | `./ssl/kubetrust.key` |
+| `CA_CONFIGMAP_NAME` | ConfigMap with CAs to inject    | `trust-bundle`        |
+| `CA_CONFIGMAP_KEY`  | Key in ConfigMap                | `trust-bundle.pem`    |
+| `CA_CERT_FILENAME`  | Filename when mounted in pods   | `ca-certificates.crt` |
 
 ## Building from Source
 
