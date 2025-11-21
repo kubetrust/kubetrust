@@ -1,0 +1,52 @@
+{{- if and .Values.certGenerator.enabled (not .Values.webhook.tls.existingSecret) (not .Values.webhook.tls.certPEM) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kubetrust.fullname" . }}-certgen-create
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      name: {{ include "kubetrust.fullname" . }}-certgen-create
+      labels:
+        {{- include "kubetrust.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "kubetrust.certgen.serviceAccountName" . }}
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 2000
+        fsGroup: 2000
+      containers:
+      - name: cert-generator
+        image: "{{ .Values.certGenerator.image.repository }}:{{ .Values.certGenerator.image.tag }}"
+        imagePullPolicy: {{ .Values.certGenerator.image.pullPolicy }}
+        args:
+        - create
+        - --host={{ include "kubetrust.webhookServiceName" . }},{{ include "kubetrust.webhookServiceName" . }}.{{ .Release.Namespace }}.svc,{{ include "kubetrust.webhookServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local
+        - --namespace={{ .Release.Namespace }}
+        - --secret-name={{ include "kubetrust.webhookTLSSecret" . }}
+        - --cert-name={{ .Values.webhook.tls.certKey }}
+        - --key-name={{ .Values.webhook.tls.keyKey }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+{{- end }}

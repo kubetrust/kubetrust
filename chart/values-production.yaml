@@ -1,0 +1,53 @@
+# Example values for production deployment
+
+webhook:
+  image:
+    repository: your-registry.com/kubetrust/webhook
+    tag: v1.0.0
+    pullPolicy: IfNotPresent
+  
+  replicas: 2
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 256Mi
+    requests:
+      cpu: 500m
+      memory: 128Mi
+  
+  # Using cert-manager or external certificate management
+  tls:
+    existingSecret: "webhook-tls-secret"
+  
+  caInjection:
+    configMapName: "company-ca-bundle"
+    configMapKey: "ca-bundle.pem"
+    certFileName: "ca-certificates.crt"
+
+# Provide your company's internal CA certificate
+customCA:
+  pem: |
+    -----BEGIN CERTIFICATE-----
+    MIIDXTCCAkWgAwIBAgIJAKL0UG+mRkmLMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+    BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX
+    # ... (your CA certificate here)
+    -----END CERTIFICATE-----
+
+# Disable cert generation since using existing secret
+certGenerator:
+  enabled: false
+
+# Enable trust-manager for consolidated CA management
+trust-manager:
+  enabled: true
+
+# Automatically label these namespaces
+targetNamespaces:
+  - production
+  - staging
+  - development
+
+commonLabels:
+  environment: production
+  managed-by: platform-team

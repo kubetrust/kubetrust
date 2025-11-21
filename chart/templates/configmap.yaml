@@ -1,0 +1,16 @@
+{{- if and (not .Values.customCA.existingSecret) .Values.customCA.pem }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-ca-certificates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  ca.pem: |
+    {{- .Values.customCA.pem | nindent 4 }}
+{{- end }}

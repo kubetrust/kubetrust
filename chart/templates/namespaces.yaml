@@ -1,0 +1,14 @@
+{{- if .Values.targetNamespaces }}
+{{- range .Values.targetNamespaces }}
+{{- if not (has . (list "default" "kube-system" "kube-public" "kube-node-lease")) }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ . }}
+  labels:
+    kubetrust: enabled
+    trust: enabled
+{{- end }}
+{{- end }}
+{{- end }}

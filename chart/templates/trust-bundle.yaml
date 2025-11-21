@@ -1,0 +1,20 @@
+{{- if .Values.trustManager.enabled }}
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: {{ include "kubetrust.fullname" . }}-bundle
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+spec:
+  sources:
+  - useDefaultCAs: true
+  - configMap:
+      name: custom-ca-certificates
+      key: ca.pem
+  target:
+    configMap:
+      key: ca-certificates.crt
+    namespaceSelector:
+      matchLabels:
+        {{- toYaml .Values.webhook.namespaceSelector.matchLabels | nindent 8 }}
+{{- end }}

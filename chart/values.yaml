@@ -1,0 +1,137 @@
+## Webhook Configuration
+webhook:
+  ## Container image settings
+  image:
+    repository: karthickk/kubetrust
+    tag: latest
+    pullPolicy: Always
+  
+  ## Number of webhook replicas
+  replicas: 1
+  
+  ## Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 250m
+      memory: 64Mi
+  
+  ## TLS configuration for webhook server
+  tls:
+    ## Option 1: Provide certificate directly (base64 encoded)
+    ## If empty, certificates will be auto-generated using Helm hooks
+    certPEM: ""
+    keyPEM: ""
+    caPEM: ""   # For webhook caBundle in MutatingWebhookConfiguration
+    
+    ## Option 2: Use existing Kubernetes secret
+    ## If set, the above certPEM/keyPEM/caPEM will be ignored
+    existingSecret: ""
+    certKey: "tls.crt"
+    keyKey: "tls.key"
+    caKey: "ca.crt"
+  
+  ## CA Injection Configuration
+  ## These values configure which ConfigMap the webhook should inject into pods
+  caInjection:
+    ## Name of the ConfigMap containing CA certificates
+    configMapName: "kubetrust-bundle"
+    ## Key within the ConfigMap
+    configMapKey: "ca-certificates.crt"
+    ## Filename to use when mounting the certificate
+    certFileName: "ca-certificates.crt"
+  
+  ## Namespace Selector for webhook
+  ## Only pods in namespaces matching this selector will be mutated
+  namespaceSelector:
+    matchLabels:
+      kubetrust: enabled
+  
+  ## Service configuration
+  service:
+    name: kubetrust
+    type: ClusterIP
+    port: 443
+    targetPort: 8443
+
+## Custom CA certificates to inject into pods
+## This creates a Secret that will be used by trust-manager's Bundle CRD
+## The Bundle CRD combines your custom CA with system CAs into a trust bundle ConfigMap
+## The webhook then mounts this trust bundle ConfigMap into pods
+customCA:
+  ## Option 1: Provide CA certificate content directly
+  ## Paste your CA certificate PEM content here
+  pem: ""
+  # pem: |
+  #   -----BEGIN CERTIFICATE-----
+  #   MIIDXTCCAkWgAwIBAgIJAKL0UG+mRkmLMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+  #   ...
+  #   -----END CERTIFICATE-----
+  
+  ## Option 2: Use existing secret containing CA certificate
+  ## If set, the above 'pem' field will be ignored
+  existingSecret: ""
+  existingSecretKey: "ca.crt"
+
+## Certificate generation job (Helm hook)
+## Auto-generates TLS certificates for the webhook if not provided
+certGenerator:
+  enabled: true
+  image:
+    repository: registry.k8s.io/ingress-nginx/kube-webhook-certgen
+    tag: v1.4.0
+    pullPolicy: IfNotPresent
+  
+  ## Service account for certificate generation
+  serviceAccount:
+    create: true
+    name: ""  # If empty, will use generated name
+  
+  ## RBAC for certificate generation
+  rbac:
+    create: true
+  
+  ## Certificate validity in days
+  certValidityDays: 365
+
+## Trust-manager subchart configuration
+## trust-manager is automatically installed as a subchart to consolidate CA bundles
+## It combines your custom CAs with system CAs into a unified trust bundle ConfigMap
+## Control installation of the `trust-manager` dependency.
+## NOTE: The chart will auto-generate TLS certificates for trust-manager's webhook
+## using Helm hooks (no cert-manager required).
+trustManager:
+  enabled: true
+
+## Configuration values passed to the trust-manager subchart
+## trust-manager requires a namespace to watch for trust sources
+trust-manager:
+  app:
+    trust:
+      # Use the kubetrust-system namespace as the trust source instead of cert-manager
+      namespace: "kubetrust-system"
+    webhook:
+      tls:
+        approverPolicy:
+          # Disable approver-policy integration (requires approver-policy CRD)
+          enabled: false
+
+## Namespace configuration
+## Set skipCreation to true when using helm install --create-namespace
+namespace:
+  skipCreation: false
+
+## Array of namespace names to label for webhook injection
+targetNamespaces: []
+# targetNamespaces:
+#   - default
+#   - production
+#   - staging
+
+## Labels to apply to all resources
+commonLabels: {}
+
+## Annotations to apply to all resources
+commonAnnotations: {}

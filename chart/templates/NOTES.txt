@@ -1,0 +1,59 @@
+THANK YOU FOR INSTALLING {{ .Chart.Name | upper }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+  $ helm get all {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+{{- if .Values.certGenerator.enabled }}
+
+🔐 TLS certificates have been automatically generated for the webhook.
+{{- else if .Values.webhook.tls.existingSecret }}
+
+🔐 Using existing TLS secret: {{ .Values.webhook.tls.existingSecret }}
+{{- else if .Values.webhook.tls.certPEM }}
+
+🔐 Using provided TLS certificates.
+{{- end }}
+
+📋 Webhook Configuration:
+   - Service: {{ include "kubetrust.webhookServiceName" . }}.{{ .Release.Namespace }}.svc
+   - ConfigMap for CA injection: {{ .Values.webhook.caInjection.configMapName }}
+   - ConfigMap key: {{ .Values.webhook.caInjection.configMapKey }}
+
+🎯 To enable mutation in a namespace, label it:
+
+   kubectl label namespace <namespace-name> kubetrust=enabled
+
+{{- if .Values.targetNamespaces }}
+
+✅ The following namespaces have been automatically labeled:
+{{- range .Values.targetNamespaces }}
+   - {{ . }}
+{{- end }}
+{{- else }}
+
+⚠️  No namespaces have been automatically labeled. Label namespaces manually to enable mutation.
+{{- end }}
+
+🧪 To test the webhook, deploy a pod in a labeled namespace:
+
+   kubectl label namespace default kubetrust=enabled
+   kubectl run test-pod --image=nginx -n default
+   kubectl get pod test-pod -n default -o yaml | grep -A 10 volumeMounts
+
+   You should see the CA certificates mounted at /etc/ssl/certs/
+
+📚 For more information:
+   - Chart README: https://github.com/karthick-kk/kubetrust
+   - Check webhook logs: kubectl logs -n {{ .Release.Namespace }} -l app=mutateme
+
+{{- if .Values.trustManager.enabled }}
+
+🔒 Trust-manager has been installed as a subchart for CA bundle management.
+   - Creates Bundle CRD to combine custom CAs with system CAs
+   - Automatically maintains trust bundle ConfigMap
+   - Check status: kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name=trust-manager
+{{- end }}

@@ -1,0 +1,86 @@
+{{- if and .Values.certGenerator.enabled (not .Values.webhook.tls.existingSecret) (not .Values.webhook.tls.certPEM) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kubetrust.fullname" . }}-certgen-patch
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      name: {{ include "kubetrust.fullname" . }}-certgen-patch
+      labels:
+        {{- include "kubetrust.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "kubetrust.certgen.serviceAccountName" . }}
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 2000
+        fsGroup: 2000
+      containers:
+      - name: cert-patcher
+        image: "{{ .Values.certGenerator.image.repository }}:{{ .Values.certGenerator.image.tag }}"
+        imagePullPolicy: {{ .Values.certGenerator.image.pullPolicy }}
+        args:
+        - patch
+        - --webhook-name={{ include "kubetrust.fullname" . }}
+        - --namespace={{ .Release.Namespace }}
+        - --secret-name={{ include "kubetrust.webhookTLSSecret" . }}
+        - --patch-mutating=true
+        - --patch-validating=false
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubetrust.fullname" . }}-certgen-patch
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
+    "helm.sh/hook-weight": "-9"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations", "validatingwebhookconfigurations"]
+  verbs: ["get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kubetrust.fullname" . }}-certgen-patch
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
+    "helm.sh/hook-weight": "-9"
+    "helm.sh/hook-delete-policy": before-hook-creation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kubetrust.fullname" . }}-certgen-patch
+subjects:
+- kind: ServiceAccount
+  name: {{ include "kubetrust.certgen.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

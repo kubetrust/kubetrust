@@ -1,0 +1,4 @@
+build/ssl/*.key
+build/ssl/*.pem
+build/ssl/*.csr
+build/kubetrust

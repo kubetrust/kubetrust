@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubetrust.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubetrust.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.webhook.replicas }}
+  selector:
+    matchLabels:
+      {{- include "kubetrust.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kubetrust.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: mutator
+        image: "{{ .Values.webhook.image.repository }}:{{ .Values.webhook.image.tag }}"
+        imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
+        ports:
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+        env:
+        - name: TLS_CERT_FILE
+          value: /etc/webhook/certs/{{ .Values.webhook.tls.certKey }}
+        - name: TLS_KEY_FILE
+          value: /etc/webhook/certs/{{ .Values.webhook.tls.keyKey }}
+        - name: CA_CONFIGMAP_NAME
+          value: {{ .Values.webhook.caInjection.configMapName | quote }}
+        - name: CA_CONFIGMAP_KEY
+          value: {{ .Values.webhook.caInjection.configMapKey | quote }}
+        - name: CA_CERT_FILENAME
+          value: {{ .Values.webhook.caInjection.certFileName | quote }}
+        volumeMounts:
+        - name: webhook-certs
+          mountPath: /etc/webhook/certs
+          readOnly: true
+        resources:
+          {{- toYaml .Values.webhook.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: {{ include "kubetrust.webhookTLSSecret" . }}

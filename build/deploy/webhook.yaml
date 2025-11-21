@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mutateme
+  labels:
+    app: mutateme
+spec:
+  publishNotReadyAddresses: true
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    app: mutateme
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mutateme
+  labels:
+    app: mutateme
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mutateme
+  template:
+    metadata:
+      name: mutateme
+      labels:
+        app: mutateme
+    spec:
+      containers:
+        - name: mutator
+          image: mutest-registry:30500/mutateca:latest
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: mutateme
+  labels:
+    app: mutateme
+webhooks:
+  - name: mutateme.default.svc.cluster.local
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJkekNDQVIyZ0F3SUJBZ0lCQURBS0JnZ3Foa2pPUFFRREFqQWpNU0V3SHdZRFZRUUREQmhyTTNNdGMyVnkKZG1WeUxXTmhRREUzTWpVMk16UTFOVGN3SGhjTk1qUXdPVEEyTVRRMU5UVTNXaGNOTXpRd09UQTBNVFExTlRVMwpXakFqTVNFd0h3WURWUVFEREJock0zTXRjMlZ5ZG1WeUxXTmhRREUzTWpVMk16UTFOVGN3V1RBVEJnY3Foa2pPClBRSUJCZ2dxaGtqT1BRTUJCd05DQUFTbytPMWpvdWdhUENsS0lvejZpSjUvdTRIZElveTlMS29mZTNqL3FUT00KNmQ1SWFIOXRKYVVwQnNnWHp1VHVqLzRWTlNJMWorekREcFBucFkrR2h2a3hvMEl3UURBT0JnTlZIUThCQWY4RQpCQU1DQXFRd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZEJnTlZIUTRFRmdRVVpDYjlLZHBQSDhpVkdaWjRQSW5sCjRjUERqTEl3Q2dZSUtvWkl6ajBFQXdJRFNBQXdSUUlnTnlLWVVkY0ZJalpLbkJnZlBxRWFCTmVCSGFFblJtbUIKWW9KTlF2QmhZdU1DSVFDQ3M3WlFZai93NmgvZjNVa3U1VjNCRkdSMFFwYno2ZnFUUVhRRHp5cGxLQT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+      service:
+        name: mutateme
+        namespace: default
+        path: "/mutate"
+        port: 443
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+      - operations: ["CREATE"]
+        apiGroups: ["batch"]
+        apiVersions: ["v1"]
+        resources: ["jobs"]
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
+    timeoutSeconds: 5
+    reinvocationPolicy: Never
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchLabels:
+        kubetrust: enabled

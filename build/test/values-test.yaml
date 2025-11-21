@@ -1,0 +1,56 @@
+# Example values for development/testing
+
+webhook:
+  image:
+    repository: karthickk/kubetrust
+    tag: v1.0
+    pullPolicy: Always
+  
+  replicas: 1
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 64Mi
+    requests:
+      cpu: 100m
+      memory: 32Mi
+
+# Auto-generate certificates for development
+certGenerator:
+  enabled: true
+
+# Simple CA for testing
+customCA:
+  pem: |
+    -----BEGIN CERTIFICATE-----
+    MIIDXTCCAkWgAwIBAgIJAKL0UG+mRkmLMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+    BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX
+    # ... (your CA certificate here)
+    -----END CERTIFICATE-----
+
+# Enable trust-manager with auto-generated certificates
+trustManager:
+  enabled: true
+
+# Configure trust-manager to use kubetrust-system namespace
+trust-manager:
+  app:
+    trust:
+      namespace: "kubetrust-system"
+    webhook:
+      tls:
+        approverPolicy:
+          enabled: false
+
+# Skip namespace creation when we use --create-namespace flag
+namespace:
+  skipCreation: true
+
+# Test in default namespace
+# Note: For system namespaces like 'default', label them manually after installation:
+#   kubectl label namespace default kubetrust=enabled
+targetNamespaces: []
+
+commonLabels:
+  environment: development
