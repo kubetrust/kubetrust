@@ -1,9 +1,6 @@
 <h1 align="center">
   <img src="images/logo.svg" width="100" valign="middle" alt="kubetrust logo"> kubetrust
 </h1>
-<div align="center">
-  <p><strong>Kubernetes Mutating Webhook for Automatic CA Certificate Injection</strong></p>
-</div>
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
