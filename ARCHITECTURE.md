@@ -4,7 +4,7 @@
 
 ## Architecture Overview
 
-![Architecture Overview](images/architecture.png)
+![Architecture Overview](images/architecture.svg)
 
 
 ## Step-by-Step Flow

@@ -29,7 +29,7 @@ kubetrust works by:
 2. **Bundling**: trust-manager's Bundle CRD combines custom CAs with system CAs into a ConfigMap
 3. **Injecting**: The webhook automatically mounts this ConfigMap into pods in labeled namespaces
 
-![Architecture Overview](images/architecture.png)
+![Architecture Overview](images/architecture.svg)
 
 📖 **[Detailed Architecture Documentation](ARCHITECTURE.md)**
 

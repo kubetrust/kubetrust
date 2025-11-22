@@ -1,6 +1,3 @@
 # Downloaded chart dependencies
 charts/
 *.tgz
-
-# Chart lock file (optional - you can commit this to lock versions)
-# Chart.lock
